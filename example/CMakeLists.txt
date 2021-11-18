@@ -25,3 +25,8 @@ foreach(example ${EXAMPLES})
 endforeach()
 
 add_custom_target(examples ALL DEPENDS ${EXAMPLES})
+
+add_executable(wsclient wsclient/wsclient.cc
+                        easywsclient/easywsclient.cpp)
+target_include_directories(wsclient PUBLIC ${CMAKE_SOURCE_DIR}/include)
+target_link_libraries(wsclient jsoncpp_lib)
