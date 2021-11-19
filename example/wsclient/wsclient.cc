@@ -7,6 +7,7 @@
 const int kUserTypeWeb = 0;
 const int kUserTypeStreamer = 1;
 
+// NOTION: same with signal-server
 const char kJoinRoom[] = "joinRoom";
 const char kOffer[] = "offer";
 const char kAnswer[] = "answer";
@@ -14,6 +15,16 @@ const char kCandidate[] = "candidate";
 const char kHangUp[] = "hangUp";
 const char kLeaveRoom[] = "leaveRoom";
 const char kUpdateUserList[] = "updateUserList";
+
+// NOTION: same with webrtc-streamer's peer_connection_manager.cc
+// Names used for a IceCandidate JSON object.
+const char* kCandidateSdpMidName = "sdpMid";
+const char* kCandidateSdpMlineIndexName = "sdpMLineIndex";
+const char* kCandidateSdpName = "candidate";
+
+// Names used for a SessionDescription JSON object.
+const char* kSessionDescriptionTypeName = "type";
+const char* kSessionDescriptionSdpName = "sdp";
 
 std::string BuildJoinRoom(const std::string& id) {
   Json::Value root;
@@ -54,7 +65,9 @@ struct OfferData {
     std::string to;
     std::string sessionId;
     std::string roomId;
-    std::string description;
+    // description
+    std::string sub_type;
+    std::string sub_sdp;
 };
 
 struct CandidateData {
@@ -62,7 +75,10 @@ struct CandidateData {
     std::string to;
     std::string sessionId;
     std::string roomId;
-    std::string candidate;
+    //Json::Value candidate; {"sdpMid":"xx", "sdpMLineIndex":"xx", "candidate":"xx"}
+    std::string sub_sdpMid;
+    std::string sub_sdpMLineIndex;
+    std::string sub_candidate;
 };
 
 int HandleMessage(const std::string & rawJson) {
@@ -91,7 +107,8 @@ int HandleMessage(const std::string & rawJson) {
       .to = data["to"].asString(),
       .sessionId = data["sessionId"].asString(),
       .roomId = data["roomId"].asString(),
-      .description = data["description"].asString(),
+      .sub_type = data["description"]["type"].asString(),
+      .sub_sdp = data["description"]["sdp"].asString(),
     };
   } else if (type == std::string(kCandidate)) {
     CandidateData message = {
@@ -99,7 +116,9 @@ int HandleMessage(const std::string & rawJson) {
       .to = data["to"].asString(),
       .sessionId = data["sessionId"].asString(),
       .roomId = data["roomId"].asString(),
-      .candidate = data["candidate"].asString(),
+      .sub_sdpMid = data["candidate"][kCandidateSdpMidName].asString(),
+      .sub_sdpMLineIndex = data["candidate"][kCandidateSdpMlineIndexName].asString(),
+      .sub_candidate = data["candidate"][kCandidateSdpName].asString(),
     };
   } else {
       assert(false);
