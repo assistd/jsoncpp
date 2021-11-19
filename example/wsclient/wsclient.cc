@@ -26,25 +26,6 @@ const char* kCandidateSdpName = "candidate";
 const char* kSessionDescriptionTypeName = "type";
 const char* kSessionDescriptionSdpName = "sdp";
 
-std::string BuildJoinRoom(const std::string& id) {
-  Json::Value root;
-  Json::StreamWriterBuilder builder;
-  root["type"] = kJoinRoom;
-  root["data"]["userType"] = kUserTypeStreamer;
-  root["data"]["id"] = id;
-  return Json::writeString(builder, root);
-}
-
-int Offer(std::string from, std::string to) {
-//   root["type"] = "robin";
-//   root["data"]["from"] = from;
-//   root["data"]["to"] = to;
-//   root["data"]["sessionId"] = 1;
-//   root["data"]["roomId"] = 0;
-//   root["data"]["description"] = 1;
-  return 0;
-}
-
 struct JoinRoomData {
     std::string name;
     std::string id;
@@ -81,6 +62,26 @@ struct CandidateData {
     std::string sub_candidate;
 };
 
+std::string BuildJoinRoom(const std::string& id) {
+  Json::Value root;
+  Json::StreamWriterBuilder builder;
+  root["type"] = kJoinRoom;
+  root["data"]["userType"] = kUserTypeStreamer;
+  root["data"]["id"] = id;
+  return Json::writeString(builder, root);
+}
+
+Json::Value OnOffer(const OfferData& message, const Json::Value desc) {
+  Json::Value root;
+  root["type"] = kAnswer;
+  root["data"]["from"] = message.to;
+  root["data"]["to"] = message.from;
+  root["data"]["sessionId"] = message.sessionId;
+  root["data"]["roomId"] = message.roomId;
+  root["data"]["description"] = desc;
+  return root;
+}
+
 int HandleMessage(const std::string & rawJson) {
   const auto rawJsonLength = static_cast<int>(rawJson.length());
   JSONCPP_STRING err;
@@ -110,6 +111,9 @@ int HandleMessage(const std::string & rawJson) {
       .sub_type = data["description"]["type"].asString(),
       .sub_sdp = data["description"]["sdp"].asString(),
     };
+
+    // TODO
+    OnOffer(message, data["description"]);
   } else if (type == std::string(kCandidate)) {
     CandidateData message = {
       .from = data["from"].asString(),
@@ -121,7 +125,8 @@ int HandleMessage(const std::string & rawJson) {
       .sub_candidate = data["candidate"][kCandidateSdpName].asString(),
     };
   } else {
-      assert(false);
+    std::cout << "not supported!" << std::endl;
+    assert(false);
   }
 }
 
