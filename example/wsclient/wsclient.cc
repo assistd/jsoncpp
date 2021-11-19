@@ -41,7 +41,15 @@ struct JoinRoomData {
     std::string roomId;
 };
 
+/*
 struct SessionData {
+    std::string from;
+    std::string to;
+    std::string sessionId;
+    std::string roomId;
+};
+*/
+struct OfferData {
     std::string from;
     std::string to;
     std::string sessionId;
@@ -49,8 +57,12 @@ struct SessionData {
     std::string description;
 };
 
-struct Message {
-    std::string type;
+struct CandidateData {
+    std::string from;
+    std::string to;
+    std::string sessionId;
+    std::string roomId;
+    std::string candidate;
 };
 
 int HandleMessage(const std::string & rawJson) {
@@ -74,7 +86,7 @@ int HandleMessage(const std::string & rawJson) {
       .roomId = data["roomId"].asString(),
     };
   } else if (type == std::string(kOffer)) {
-    SessionData message = {
+    OfferData message = {
       .from = data["from"].asString(),
       .to = data["to"].asString(),
       .sessionId = data["sessionId"].asString(),
@@ -82,7 +94,13 @@ int HandleMessage(const std::string & rawJson) {
       .description = data["description"].asString(),
     };
   } else if (type == std::string(kCandidate)) {
-    // TODO
+    CandidateData message = {
+      .from = data["from"].asString(),
+      .to = data["to"].asString(),
+      .sessionId = data["sessionId"].asString(),
+      .roomId = data["roomId"].asString(),
+      .candidate = data["candidate"].asString(),
+    };
   } else {
       assert(false);
   }
