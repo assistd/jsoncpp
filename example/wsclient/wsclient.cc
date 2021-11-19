@@ -15,14 +15,13 @@ const char kHangUp[] = "hangUp";
 const char kLeaveRoom[] = "leaveRoom";
 const char kUpdateUserList[] = "updateUserList";
 
-int JoinRoom() {
+std::string BuildJoinRoom(const std::string& id) {
   Json::Value root;
   Json::StreamWriterBuilder builder;
-  root["type"] = "robin";
+  root["type"] = kJoinRoom;
   root["data"]["userType"] = kUserTypeStreamer;
-  const std::string json_file = Json::writeString(builder, root);
-  std::cout << json_file << std::endl;
-  return 0;
+  root["data"]["id"] = id;
+  return Json::writeString(builder, root);
 }
 
 int Offer(std::string from, std::string to) {
@@ -35,23 +34,23 @@ int Offer(std::string from, std::string to) {
   return 0;
 }
 
+struct JoinRoomData {
+    std::string name;
+    std::string id;
+    int userType;
+    std::string roomId;
+};
+
+struct SessionData {
+    std::string from;
+    std::string to;
+    std::string sessionId;
+    std::string roomId;
+    std::string description;
+};
+
 struct Message {
     std::string type;
-    union {
-        struct {
-            std::string name;
-            std::string id;
-            int userType;
-            std::string roomId;
-        } joinRoomData;
-        struct {
-            std::string from;
-            std::string to;
-            std::string sessionId;
-            std::string roomId;
-            std::string description;
-        } sessionData;
-    };
 };
 
 int HandleMessage(const std::string & rawJson) {
@@ -68,29 +67,22 @@ int HandleMessage(const std::string & rawJson) {
   Json::Value data = root["data"];
 
   if (type == std::string(kJoinRoom)) {
-    Message message = {
-      .type = kJoinRoom,
-      .joinRoomData = {
-          .name = data["name"].asString(),
-          .id = data["id"].asString(),
-          .userType = data["userType"].asInt(),
-          .roomId = data["roomId"].asString(),
-      },
+    JoinRoomData message = {
+      .name = data["name"].asString(),
+      .id = data["id"].asString(),
+      .userType = data["userType"].asInt(),
+      .roomId = data["roomId"].asString(),
     };
   } else if (type == std::string(kOffer)) {
-    Message message = {
-      .type = kOffer,
-      .sessionData = {
-          .from = data["from"].asString(),
-          .to = data["to"].asString(),
-          .sessionId = data["sessionId"].asString(),
-          .roomId = data["roomId"].asString(),
-      },
+    SessionData message = {
+      .from = data["from"].asString(),
+      .to = data["to"].asString(),
+      .sessionId = data["sessionId"].asString(),
+      .roomId = data["roomId"].asString(),
+      .description = data["description"].asString(),
     };
   } else if (type == std::string(kCandidate)) {
-    Message message = {
-      .type = kCandidate,
-    };
+    // TODO
   } else {
       assert(false);
   }
@@ -109,10 +101,9 @@ int main()
         return 1;
     }
 #endif
-    std::unique_ptr<WebSocket> ws(WebSocket::from_url("ws://localhost:8126/foo"));
+    std::unique_ptr<WebSocket> ws(WebSocket::from_url("ws://localhost:8089/ws"));
     assert(ws);
-    ws->send("goodbye");
-    ws->send("hello");
+    ws->send(BuildJoinRoom("21345"));
     while (ws->getReadyState() != WebSocket::CLOSED) {
         WebSocket::pointer wsp = &*ws; // <-- because a unique_ptr cannot be copied into a lambda
         ws->poll();
